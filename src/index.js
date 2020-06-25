@@ -12,7 +12,7 @@ function webGLStart() {
 let glProgram,
   gl,
   canvas,
-  transform = 0;
+  transform = -200;
 
 function init() {
   canvas = document.getElementById("canvas");
@@ -134,7 +134,7 @@ function renderScene() {
   gl.uniform4f(colorIndex, 1, 1, 0, 1);
   gl.uniform1f(xTransformIndex, transform);
   if (transform >= 600) {
-    transform = 0;
+    transform = -200;
   } else {
     transform += 1;
   }

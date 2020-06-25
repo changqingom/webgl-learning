@@ -102,7 +102,7 @@ void main(void){
       1.0,
       1.0,
       0,
-      1.0,
+      1.0
     ]),
     gl.STATIC_DRAW
   );
@@ -131,7 +131,7 @@ function renderScene() {
 
   gl.enableVertexAttribArray(positionsIndex);
 
-  gl.uniform4f(colorIndex, 0, 1, 1, 1);
+  gl.uniform4f(colorIndex, 1, 1, 0, 1);
   gl.uniform1f(xTransformIndex, transform);
   if (transform >= 600) {
     transform = 0;

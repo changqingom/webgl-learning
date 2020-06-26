@@ -9,10 +9,7 @@ function webGLStart() {
   tick();
 }
 
-let glProgram,
-  gl,
-  canvas,
-  transform = -200;
+let glProgram, gl, canvas;
 
 function init() {
   canvas = document.getElementById("canvas");
@@ -27,9 +24,8 @@ function init() {
 precision lowp float;
 attribute vec3 a_v3Position;
 uniform   mat4 u_proj;
-uniform   float u_xTransform;
 void main(void){
-  gl_Position=u_proj*vec4(a_v3Position.xy+u_xTransform,a_v3Position.z,1.0);
+  gl_Position=u_proj*vec4(a_v3Position,1.0);
 }
 `;
   const fragmentShaderScript = `
@@ -64,80 +60,18 @@ void main(void){
   gl.linkProgram(glProgram);
 
   gl.useProgram(glProgram);
-
-  const positionBuffer = gl.createBuffer();
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([
-      0,
-      0,
-      0,
-      1.0,
-      0,
-      0,
-      1.0,
-
-      200,
-      0,
-      0,
-      0,
-      1.0,
-      0,
-      1.0,
-
-      200,
-      200,
-      0,
-      0,
-      0,
-      1.0,
-      1.0,
-
-      0,
-      200,
-      0,
-      1.0,
-      1.0,
-      0,
-      1.0
-    ]),
-    gl.STATIC_DRAW
-  );
-
-  const indexBuffer = gl.createBuffer();
-
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-
-  gl.bufferData(
-    gl.ELEMENT_ARRAY_BUFFER,
-    new Uint16Array([0, 1, 2, 0, 2, 3]),
-    gl.STATIC_DRAW
-  );
 }
 
 function renderScene() {
   gl.clearColor(0, 0, 0, 1);
 
   gl.clear(gl.COLOR_BUFFER_BIT);
-  let positionsIndex, colorIndex, projIndex, xTransformIndex;
+  let colorIndex, projIndex;
 
-  gl.bindAttribLocation(glProgram, positionsIndex, "a_v3Position");
   colorIndex = gl.getUniformLocation(glProgram, "u_color");
   projIndex = gl.getUniformLocation(glProgram, "u_proj");
-  xTransformIndex = gl.getUniformLocation(glProgram, "u_xTransform");
-
-  gl.enableVertexAttribArray(positionsIndex);
 
   gl.uniform4f(colorIndex, 1, 1, 0, 1);
-  gl.uniform1f(xTransformIndex, transform);
-  if (transform >= 600) {
-    transform = -200;
-  } else {
-    transform += 1;
-  }
 
   //function ortho(out, left, right, bottom, top, near, far)
   // 当前正交投影矩阵  canvas 左上角 为零起点
@@ -157,9 +91,17 @@ function renderScene() {
 
   gl.useProgram(glProgram);
 
-  gl.vertexAttribPointer(positionsIndex, 3, gl.FLOAT, false, (32 / 8) * 7, 0);
+  renderLines();
 
-  gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+  renderLineLoop();
+
+  renderLineStrip();
+
+  renderTriangles();
+
+  renderTriangleStrip();
+
+  renderTriangleFan();
 }
 
 function tick() {
@@ -168,3 +110,365 @@ function tick() {
 }
 
 webGLStart();
+
+function renderLines() {
+  const positionBuffer = gl.createBuffer();
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([
+      10,
+      10,
+      0,
+      1.0,
+      0,
+      0,
+      1.0,
+
+      200,
+      10,
+      0,
+      0,
+      1.0,
+      0,
+      1.0,
+
+      250,
+      50,
+      0,
+      0,
+      0,
+      1.0,
+      1.0,
+
+      150,
+      50,
+      0,
+      1.0,
+      1.0,
+      0,
+      1.0,
+    ]),
+    gl.STATIC_DRAW
+  );
+
+  const indexBuffer = gl.createBuffer();
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+
+  gl.bufferData(
+    gl.ELEMENT_ARRAY_BUFFER,
+    new Uint16Array([0, 1, 2, 3]),
+    gl.STATIC_DRAW
+  );
+
+  let positionsIndex;
+
+  gl.bindAttribLocation(glProgram, positionsIndex, "a_v3Position");
+
+  gl.enableVertexAttribArray(positionsIndex);
+
+  gl.vertexAttribPointer(positionsIndex, 3, gl.FLOAT, false, (32 / 8) * 7, 0);
+
+  gl.drawElements(gl.LINES, 4, gl.UNSIGNED_SHORT, 0);
+}
+
+function renderLineLoop() {
+  const positionBuffer = gl.createBuffer();
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([
+      10,
+      110,
+      0,
+      1.0,
+      0,
+      0,
+      1.0,
+
+      200,
+      110,
+      0,
+      0,
+      1.0,
+      0,
+      1.0,
+
+      250,
+      150,
+      0,
+      0,
+      0,
+      1.0,
+      1.0,
+
+      150,
+      150,
+      0,
+      1.0,
+      1.0,
+      0,
+      1.0,
+    ]),
+    gl.STATIC_DRAW
+  );
+
+  const indexBuffer = gl.createBuffer();
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+
+  gl.bufferData(
+    gl.ELEMENT_ARRAY_BUFFER,
+    new Uint16Array([0, 1, 2, 3]),
+    gl.STATIC_DRAW
+  );
+
+  let positionsIndex;
+
+  gl.bindAttribLocation(glProgram, positionsIndex, "a_v3Position");
+
+  gl.enableVertexAttribArray(positionsIndex);
+
+  gl.vertexAttribPointer(positionsIndex, 3, gl.FLOAT, false, (32 / 8) * 7, 0);
+
+  gl.drawElements(gl.LINE_LOOP, 4, gl.UNSIGNED_SHORT, 0);
+}
+
+function renderLineStrip() {
+  const positionBuffer = gl.createBuffer();
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([
+      10,
+      210,
+      0,
+      1.0,
+      0,
+      0,
+      1.0,
+
+      200,
+      210,
+      0,
+      0,
+      1.0,
+      0,
+      1.0,
+
+      250,
+      250,
+      0,
+      0,
+      0,
+      1.0,
+      1.0,
+
+      150,
+      250,
+      0,
+      1.0,
+      1.0,
+      0,
+      1.0,
+    ]),
+    gl.STATIC_DRAW
+  );
+
+  const indexBuffer = gl.createBuffer();
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+
+  gl.bufferData(
+    gl.ELEMENT_ARRAY_BUFFER,
+    new Uint16Array([0, 1, 2, 3]),
+    gl.STATIC_DRAW
+  );
+
+  let positionsIndex;
+
+  gl.bindAttribLocation(glProgram, positionsIndex, "a_v3Position");
+
+  gl.enableVertexAttribArray(positionsIndex);
+
+  gl.vertexAttribPointer(positionsIndex, 3, gl.FLOAT, false, (32 / 8) * 7, 0);
+
+  gl.drawElements(gl.LINE_STRIP, 4, gl.UNSIGNED_SHORT, 0);
+}
+
+function renderTriangles() {
+  const positionBuffer = gl.createBuffer();
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([
+      310,
+      10,
+      0,
+      1.0,
+      0,
+      0,
+      1.0,
+
+      500,
+      10,
+      0,
+      0,
+      1.0,
+      0,
+      1.0,
+
+      550,
+      50,
+      0,
+      0,
+      0,
+      1.0,
+      1.0,
+
+      450,
+      50,
+      0,
+      1.0,
+      1.0,
+      0,
+      1.0,
+    ]),
+    gl.STATIC_DRAW
+  );
+
+  const indexBuffer = gl.createBuffer();
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+
+  gl.bufferData(
+    gl.ELEMENT_ARRAY_BUFFER,
+    new Uint16Array([0, 1, 2]),
+    gl.STATIC_DRAW
+  );
+
+  let positionsIndex;
+
+  gl.bindAttribLocation(glProgram, positionsIndex, "a_v3Position");
+
+  gl.enableVertexAttribArray(positionsIndex);
+
+  gl.vertexAttribPointer(positionsIndex, 3, gl.FLOAT, false, (32 / 8) * 7, 0);
+
+  gl.drawElements(gl.TRIANGLES, 3, gl.UNSIGNED_SHORT, 0);
+}
+
+function renderTriangleStrip() {
+  const positionBuffer = gl.createBuffer();
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([
+      310,
+      110,
+      0,
+      1.0,
+      0,
+      0,
+      1.0,
+
+      510,
+      110,
+      0,
+      0,
+      1.0,
+      0,
+      1.0,
+
+      310,
+      160,
+      0,
+      0,
+      0,
+      1.0,
+      1.0,
+
+      510,
+      160,
+      0,
+      1.0,
+      1.0,
+      0,
+      1.0,
+    ]),
+    gl.STATIC_DRAW
+  );
+
+  const indexBuffer = gl.createBuffer();
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+
+  gl.bufferData(
+    gl.ELEMENT_ARRAY_BUFFER,
+    new Uint16Array([0, 1, 2, 3]),
+    gl.STATIC_DRAW
+  );
+
+  let positionsIndex;
+
+  gl.bindAttribLocation(glProgram, positionsIndex, "a_v3Position");
+
+  gl.enableVertexAttribArray(positionsIndex);
+
+  gl.vertexAttribPointer(positionsIndex, 3, gl.FLOAT, false, (32 / 8) * 7, 0);
+
+  gl.drawElements(gl.TRIANGLE_STRIP, 4, gl.UNSIGNED_SHORT, 0);
+}
+let count = 3,
+  add = true;
+function renderTriangleFan() {
+  const positionBuffer = gl.createBuffer();
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+  const center = [450, 450],
+    radius = 100;
+
+  const vertexArray = new Float32Array(3 * (count + 2));
+  //起始点 圆心坐标
+  vertexArray[0] = 450;
+  vertexArray[1] = 450;
+  vertexArray[2] = 0;
+  const perRadian = (Math.PI * 2) / count;
+  for (let index = 1; index <= count; index++) {
+    let radian = (index - 1) * perRadian;
+    vertexArray[3 * index + 0] = center[0] + Math.cos(radian) * radius;
+    vertexArray[3 * index + 1] = center[1] + Math.sin(radian) * radius;
+    vertexArray[3 * index + 2] = 0;
+  }
+  vertexArray[3 * (count + 1) + 0] = vertexArray[3];
+  vertexArray[3 * (count + 1) + 1] = vertexArray[4];
+  vertexArray[3 * (count + 1) + 2] = 0;
+
+  gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW);
+
+  let positionsIndex;
+  gl.bindAttribLocation(glProgram, positionsIndex, "a_v3Position");
+  gl.enableVertexAttribArray(positionsIndex);
+
+  gl.vertexAttribPointer(positionsIndex, 3, gl.FLOAT, false, (32 / 8) * 3, 0);
+
+  gl.drawArrays(gl.TRIANGLE_FAN, 0, count + 2);
+  count += add ? 1 : -1;
+  if (count > 60) {
+    add = false;
+  } else if (count < 3) {
+    add = true;
+  }
+}

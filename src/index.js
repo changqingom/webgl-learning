@@ -1,4 +1,3 @@
-// 正交投影  Orthographic projection
 import "./styles.css";
 const glMatrix = require("./lib/gl-matrix");
 

@@ -105,7 +105,8 @@ function renderScene() {
 
 function tick() {
   renderScene();
-  requestAnimationFrame(tick);
+  // requestAnimationFrame(tick);
+  setTimeout(tick, 1000 / 10);
 }
 
 webGLStart();
@@ -148,7 +149,7 @@ function renderLines() {
       1.0,
       1.0,
       0,
-      1.0,
+      1.0
     ]),
     gl.STATIC_DRAW
   );
@@ -212,7 +213,7 @@ function renderLineLoop() {
       1.0,
       1.0,
       0,
-      1.0,
+      1.0
     ]),
     gl.STATIC_DRAW
   );
@@ -276,7 +277,7 @@ function renderLineStrip() {
       1.0,
       1.0,
       0,
-      1.0,
+      1.0
     ]),
     gl.STATIC_DRAW
   );
@@ -340,7 +341,7 @@ function renderTriangles() {
       1.0,
       1.0,
       0,
-      1.0,
+      1.0
     ]),
     gl.STATIC_DRAW
   );
@@ -404,7 +405,7 @@ function renderTriangleStrip() {
       1.0,
       1.0,
       0,
-      1.0,
+      1.0
     ]),
     gl.STATIC_DRAW
   );

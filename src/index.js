@@ -1,6 +1,6 @@
 import "./styles.css";
-const glMatrix = require("./lib/gl-matrix");
 import imagePath from "./asset/001.png";
+const glMatrix = require("./lib/gl-matrix");
 
 window.glMatrix = glMatrix;
 let image;
@@ -71,7 +71,7 @@ function renderScene() {
   gl.clearColor(0, 0, 0, 1);
 
   gl.clear(gl.COLOR_BUFFER_BIT);
-  let colorIndex, projIndex;
+  let projIndex;
 
   projIndex = gl.getUniformLocation(glProgram, "u_proj");
 
@@ -149,7 +149,7 @@ function renderTriangleStrip() {
       457.0,
       0,
       0,
-      1.0,
+      1.0
     ]),
     gl.STATIC_DRAW
   );
@@ -185,9 +185,16 @@ function renderTriangleStrip() {
   gl.drawElements(gl.TRIANGLE_STRIP, 4, gl.UNSIGNED_SHORT, 0);
 }
 
+function requestCORSIfNotSameOrigin(img, url) {
+  if (new URL(url, window.location.href).origin !== window.location.origin) {
+    img.crossOrigin = "";
+  }
+}
+
 (function getImage() {
   image = new Image();
   image.src = imagePath;
+  requestCORSIfNotSameOrigin(image, imagePath);
   image.onload = () => {
     webGLStart();
   };

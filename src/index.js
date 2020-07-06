@@ -23,21 +23,21 @@ function init() {
   const vertexShaderScript = `
 precision lowp float;
 attribute vec3 a_v3Position;
-attribute vec2 a_v2intuv;
+attribute vec2 a_texCoord;
 uniform   mat4 u_proj;
-varying   vec2 v_v2outuv;
+varying   vec2 v_texCoord;
 
 void main(void){
-  v_v2outuv=a_v2intuv;
+  v_texCoord=a_texCoord;
   gl_Position=u_proj*vec4(a_v3Position,1.0);
 }
 `;
   const fragmentShaderScript = `
 precision lowp float;
-varying   vec2 v_v2outuv;
+varying   vec2 v_texCoord;
 uniform   sampler2D  u_image;
 void main(void){
-  gl_FragColor= vec4(1.0,0.0,0.0,1.0);//texture2D(u_image, v_v2outuv);
+  gl_FragColor= texture2D(u_image, v_texCoord);
 }
 `;
 
@@ -106,11 +106,13 @@ function renderTriangleStrip() {
   const positionBuffer = gl.createBuffer();
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
   gl.bindTexture(gl.TEXTURE_2D, null);
 
@@ -162,16 +164,17 @@ function renderTriangleStrip() {
     gl.STATIC_DRAW
   );
 
-  let positionsIndex, v2intuvIndex;
+  let positionsIndex = 0,
+    texCoordIndex = 1;
 
   gl.bindAttribLocation(glProgram, positionsIndex, "a_v3Position");
-  gl.bindAttribLocation(glProgram, v2intuvIndex, "a_v2intuv");
+  gl.bindAttribLocation(glProgram, texCoordIndex, "a_texCoord");
   gl.enableVertexAttribArray(positionsIndex);
-  gl.enableVertexAttribArray(v2intuvIndex);
+  gl.enableVertexAttribArray(texCoordIndex);
 
   gl.vertexAttribPointer(positionsIndex, 3, gl.FLOAT, false, (32 / 8) * 5, 0);
   gl.vertexAttribPointer(
-    v2intuvIndex,
+    texCoordIndex,
     2,
     gl.FLOAT,
     false,

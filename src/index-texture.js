@@ -1,6 +1,7 @@
 import "./styles.css";
-import imagePath01 from "./asset/001-1024x1024.png";
-import imagePath02 from "./asset/001-1436x1072.png";
+
+const imagePath01 = "/img/001-1024x1024.png";
+const imagePath02 = "/img/001-1436x1072.png";
 
 const glMatrix = require("./lib/gl-matrix");
 
@@ -160,7 +161,7 @@ function renderTriangleStrip() {
       457.0,
       0,
       0,
-      2.0
+      2.0,
     ]),
     gl.STATIC_DRAW
   );

@@ -1,6 +1,6 @@
 import "./styles.css";
 import imagePath01 from "./asset/001-1024x1024.png";
-import imagePath02 from "./asset/001-1436x1072.png";
+// import imagePath02 from "./asset/001-1436x1072.png";
 
 const glMatrix = require("./lib/gl-matrix");
 

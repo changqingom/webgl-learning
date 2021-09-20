@@ -1,20 +1,20 @@
 import "./styles.css";
 
-const imagePath01 = "/img/001-1024x1024.png";
-const imagePath02 = "/img/001-1436x1072.png";
-
 const glMatrix = require("./lib/gl-matrix");
 
+const numberArray = [2, 3, null, 4, 0, 5, 1, 4, 6, 3];
+const gridWidth = 20;
 window.glMatrix = glMatrix;
-let image;
 function webGLStart() {
-  init();
+  webGLInit();
   tick();
 }
 
-let glProgram, gl, canvas;
+let glProgram, gl, canvas, barInfo;
+computeBarInfo(numberArray);
+webGLStart();
 
-function init() {
+function webGLInit() {
   canvas = document.getElementById("canvas");
 
   gl = canvas.getContext("webgl");
@@ -24,25 +24,24 @@ function init() {
   gl.viewport(0, 0, canvas.clientWidth, canvas.clientHeight);
 
   const vertexShaderScript = `
-precision lowp float;
-attribute vec3 a_v3Position;
-attribute vec2 a_texCoord;
-uniform   mat4 u_proj;
-varying   vec2 v_texCoord;
-
-void main(void){
-  v_texCoord=a_texCoord;
-  gl_Position=u_proj*vec4(a_v3Position,1.0);
-}
+  attribute vec4 a_position;
+  
+  uniform mat4 u_matrix;
+  
+  
+  void main() {
+    gl_Position = u_matrix * a_position;
+    
+  }
 `;
   const fragmentShaderScript = `
-precision lowp float;
-varying   vec2 v_texCoord;
-uniform   sampler2D  u_image;
-uniform   float      u_anima;
-void main(void){
-  gl_FragColor= texture2D(u_image, vec2(v_texCoord.x+u_anima,v_texCoord.y+u_anima));
-}
+  precision mediump float;
+
+  uniform vec4 u_color;
+  
+  void main() {
+     gl_FragColor = u_color;
+  }
 `;
 
   const vertexShaderObj = gl.createShader(gl.VERTEX_SHADER);
@@ -55,10 +54,10 @@ void main(void){
   gl.compileShader(fragmentShaderObj);
 
   if (!gl.getShaderParameter(vertexShaderObj, gl.COMPILE_STATUS)) {
-    console.log(gl.getShaderInfoLog(vertexShaderObj));
+    console.error(gl.getShaderInfoLog(vertexShaderObj));
   }
   if (!gl.getShaderParameter(fragmentShaderObj, gl.COMPILE_STATUS)) {
-    console.log(gl.getShaderInfoLog(fragmentShaderObj));
+    console.error(gl.getShaderInfoLog(fragmentShaderObj));
   }
 
   glProgram = gl.createProgram();
@@ -70,144 +69,267 @@ void main(void){
 
   gl.useProgram(glProgram);
 }
-
+let rotateY = 30;
+let rotateX = 15;
 function renderScene() {
-  gl.clearColor(0, 0, 0, 1);
+  gl.clearColor(1, 1, 1, 1);
 
   gl.clear(gl.COLOR_BUFFER_BIT);
-  let projIndex;
 
-  projIndex = gl.getUniformLocation(glProgram, "u_proj");
+  gl.enable(gl.DEPTH_TEST);
 
-  //function ortho(out, left, right, bottom, top, near, far)
-  // 当前正交投影矩阵  canvas 左上角 为零起点
-  gl.uniformMatrix4fv(
-    projIndex,
-    false,
-    glMatrix.mat4.ortho(
-      glMatrix.mat4.create(),
-      0,
-      canvas.width,
-      canvas.height,
-      0,
-      -10,
-      10
-    )
+  let matrixIndex = gl.getUniformLocation(glProgram, "u_matrix");
+
+  let mart4 = glMatrix.mat4.ortho(
+    glMatrix.mat4.create(),
+    -canvas.width / 2,
+    canvas.width / 2,
+    -canvas.height / 2,
+    canvas.height / 2,
+    -1000,
+    10000
   );
+  mart4 = glMatrix.mat4.scale(
+    glMatrix.mat4.create(),
+    mart4,
+    glMatrix.vec3.fromValues(2.7, 2.5, 2)
+  );
+  mart4 = glMatrix.mat4.rotate(
+    glMatrix.mat4.create(),
+    mart4,
+    (rotateX * Math.PI) / 180,
+    glMatrix.vec3.fromValues(1, 0, 0)
+  );
+  mart4 = glMatrix.mat4.rotate(
+    glMatrix.mat4.create(),
+    mart4,
+    -(rotateY * Math.PI) / 180,
+    glMatrix.vec3.fromValues(0, 1, 0)
+  );
+
+  // rotateY+=0.5
+
+  gl.uniformMatrix4fv(matrixIndex, false, mart4);
 
   gl.useProgram(glProgram);
 
-  renderTriangleStrip();
+  renderGrid();
+  renderBar();
 }
 
 function tick() {
   renderScene();
   requestAnimationFrame(tick);
-  // setTimeout(tick, 1000 / 10);
 }
-let uvOffset = 0;
-function renderTriangleStrip() {
-  const positionBuffer = gl.createBuffer();
-  const texture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, texture);
+function renderGrid() {
+  const vertexArray = computeGrid(barInfo.xNumber, barInfo.yNumber);
 
-  // 设置当前绑定材质的参数、
-  // 材质缩小时的取值方式
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-  // 放大时的取值方式
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-  // 材质范围越界时的取值方式
-  //REPEAT 重复 MIRRORED_REPEAT 镜像重复   CLAMP_TO_EDGE  就近边缘取值
-  // 注意 ： REPEAT 方式对图片分辨率有要求，长宽必须要2的整数次幂 否则会黑屏
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+  for (const lineArray of vertexArray) {
+    const uniformColorIndex = gl.getUniformLocation(glProgram, "u_color");
 
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    gl.uniform4f(uniformColorIndex, 0, 0, 0, 0.2);
 
-  gl.bindTexture(gl.TEXTURE_2D, null);
+    const positionBuffer = gl.createBuffer();
 
-  const uniformTextureIndex = gl.getUniformLocation(glProgram, "u_image");
-  const uniformAnimaIndex = gl.getUniformLocation(glProgram, "u_anima");
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.uniform1i(uniformTextureIndex, 0);
-  gl.uniform1f(uniformAnimaIndex, uvOffset);
-  uvOffset += 0.005;
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lineArray), gl.STATIC_DRAW);
 
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([
-      529.0,
-      100.0,
-      0,
-      2.0,
-      0,
+    const attributePositionIndex = gl.getAttribLocation(
+      glProgram,
+      "a_position"
+    );
 
-      50.0,
-      100.0,
-      0,
-      0,
-      0,
+    gl.enableVertexAttribArray(attributePositionIndex);
 
-      529.0,
-      457.0,
-      0,
-      2.0,
-      2.0,
+    gl.vertexAttribPointer(
+      attributePositionIndex,
+      3,
+      gl.FLOAT,
+      false,
+      (32 / 8) * 3,
+      0
+    );
 
-      50.0,
-      457.0,
-      0,
-      0,
-      2.0,
-    ]),
-    gl.STATIC_DRAW
-  );
-
-  const indexBuffer = gl.createBuffer();
-
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-
-  gl.bufferData(
-    gl.ELEMENT_ARRAY_BUFFER,
-    new Uint16Array([0, 1, 2, 3]),
-    gl.STATIC_DRAW
-  );
-
-  let positionsIndex = 0,
-    texCoordIndex = 1;
-
-  gl.bindAttribLocation(glProgram, positionsIndex, "a_v3Position");
-  gl.bindAttribLocation(glProgram, texCoordIndex, "a_texCoord");
-  gl.enableVertexAttribArray(positionsIndex);
-  gl.enableVertexAttribArray(texCoordIndex);
-
-  gl.vertexAttribPointer(positionsIndex, 3, gl.FLOAT, false, (32 / 8) * 5, 0);
-  gl.vertexAttribPointer(
-    texCoordIndex,
-    2,
-    gl.FLOAT,
-    false,
-    (32 / 8) * 5,
-    (32 / 8) * 3
-  );
-
-  gl.drawElements(gl.TRIANGLE_STRIP, 4, gl.UNSIGNED_SHORT, 0);
-}
-
-function requestCORSIfNotSameOrigin(img, url) {
-  if (new URL(url, window.location.href).origin !== window.location.origin) {
-    img.crossOrigin = "";
+    gl.drawArrays(gl.LINE_STRIP, 0, 3);
   }
 }
+function renderBar() {
+  for (let index = 0; index < numberArray.length; index++) {
+    const number = numberArray[index];
+    const { vertexArray, indexArray } = computeBarVertexArray(number, [
+      10 + 20 * index,
+      0,
+      17.5,
+    ]);
 
-(function getImage() {
-  image = new Image();
-  image.src = imagePath01;
-  requestCORSIfNotSameOrigin(image, imagePath01);
-  image.onload = () => {
-    webGLStart();
-  };
-})();
+    const uniformColorIndex = gl.getUniformLocation(glProgram, "u_color");
+
+    gl.uniform4f(uniformColorIndex, 1, 0, 0, 0.5);
+
+    const positionBuffer = gl.createBuffer();
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(vertexArray),
+      gl.STATIC_DRAW
+    );
+
+    const indexBuffer = gl.createBuffer();
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+
+    gl.bufferData(
+      gl.ELEMENT_ARRAY_BUFFER,
+      new Uint16Array(indexArray),
+      gl.STATIC_DRAW
+    );
+
+    const attributePositionIndex = gl.getAttribLocation(
+      glProgram,
+      "a_position"
+    );
+
+    gl.enableVertexAttribArray(attributePositionIndex);
+
+    gl.vertexAttribPointer(
+      attributePositionIndex,
+      3,
+      gl.FLOAT,
+      false,
+      (32 / 8) * 3,
+      0
+    );
+
+    gl.drawElements(gl.TRIANGLE_STRIP, indexArray.length, gl.UNSIGNED_SHORT, 0);
+  }
+  return;
+}
+
+function computeBarVertexArray(
+  number,
+  centerCoordinate,
+  length = 10,
+  width = 10,
+  perHeight = gridWidth
+) {
+  const vertexArray = [];
+  const indexArray = [];
+  const { xNumber, yNumber } = barInfo;
+  if (Number.isInteger(number)) {
+    const [x, y, z] = centerCoordinate;
+    //底
+    vertexArray.push(
+      x - width / 2 - (xNumber * gridWidth) / 2,
+      y - (yNumber * gridWidth) / 2,
+      z - length / 2
+    );
+    vertexArray.push(
+      x + width / 2 - (xNumber * gridWidth) / 2,
+      y - (yNumber * gridWidth) / 2,
+      z - length / 2
+    );
+    vertexArray.push(
+      x + width / 2 - (xNumber * gridWidth) / 2,
+      y - (yNumber * gridWidth) / 2,
+      z + length / 2
+    );
+    vertexArray.push(
+      x - width / 2 - (xNumber * gridWidth) / 2,
+      y - (yNumber * gridWidth) / 2,
+      z + length / 2
+    );
+
+    if (number !== 0) {
+      //顶
+      vertexArray.push(
+        x - width / 2 - (xNumber * gridWidth) / 2,
+        perHeight * number - (yNumber * gridWidth) / 2,
+        z - length / 2
+      );
+      vertexArray.push(
+        x + width / 2 - (xNumber * gridWidth) / 2,
+        perHeight * number - (yNumber * gridWidth) / 2,
+        z - length / 2
+      );
+      vertexArray.push(
+        x + width / 2 - (xNumber * gridWidth) / 2,
+        perHeight * number - (yNumber * gridWidth) / 2,
+        z + length / 2
+      );
+      vertexArray.push(
+        x - width / 2 - (xNumber * gridWidth) / 2,
+        perHeight * number - (yNumber * gridWidth) / 2,
+        z + length / 2
+      );
+
+      //索引
+      indexArray.push(0, 1, 3, 1, 2, 3);
+
+      indexArray.push(0, 3, 4, 4, 3, 7);
+      indexArray.push(1, 0, 5, 5, 0, 4);
+      indexArray.push(7, 3, 2, 7, 2, 6);
+      indexArray.push(0, 1, 3, 1, 2, 3);
+
+      indexArray.push(4, 7, 5, 5, 7, 6);
+    } else {
+      indexArray.push(0, 3, 1, 1, 3, 2);
+    }
+  }
+  return { vertexArray, indexArray };
+}
+
+function computeGrid(xNumber, yNumber, width = gridWidth) {
+  const vertexArray = [];
+  for (let index = 0; index <= yNumber; index++) {
+    const temArray = [];
+    temArray.push(
+      0 - (xNumber * width) / 2,
+      index * width - (yNumber * width) / 2,
+      width
+    );
+    temArray.push(
+      0 - (xNumber * width) / 2,
+      index * width - (yNumber * width) / 2,
+      0
+    );
+    temArray.push(
+      xNumber * width - (xNumber * width) / 2,
+      index * width - (yNumber * width) / 2,
+      0
+    );
+    vertexArray.push(temArray);
+  }
+  for (let index = 0; index <= xNumber; index++) {
+    const temArray = [];
+    temArray.push(
+      index * width - (xNumber * width) / 2,
+      0 - (yNumber * width) / 2,
+      width
+    );
+    temArray.push(
+      index * width - (xNumber * width) / 2,
+      0 - (yNumber * width) / 2,
+      0
+    );
+    temArray.push(
+      index * width - (xNumber * width) / 2,
+      yNumber * width - (yNumber * width) / 2,
+      0
+    );
+    vertexArray.push(temArray);
+  }
+  return vertexArray;
+}
+
+function computeBarInfo(array) {
+  const xNumber = array.length || 1;
+  const yNumber =
+    (array.reduce((val, pre) => {
+      return pre > val ? pre : val;
+    }, null) || 0) + 1;
+
+  barInfo = { xNumber, yNumber };
+}
